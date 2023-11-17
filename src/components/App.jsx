@@ -1,6 +1,7 @@
-import Notiflix from 'notiflix';
+import { useState } from 'react';
+import { useHookLS } from './hooks/hookLS';
 
-import { Component } from 'react';
+import Notiflix from 'notiflix';
 import { nanoid } from 'nanoid';
 import { Box } from './Box/Box';
 import { Boxitem } from './ContactsList/ContactList.styled';
@@ -9,35 +10,23 @@ import { ContactForm } from './Form/Form';
 import { Filter } from './Filter/Filter';
 import { ContactList } from './ContactsList/ContactList';
 
-export class App extends Component {
-  state = {
-    contacts: [
+export function App() {
+  const [contacts, setContacts] = useHookLS(
+    [
       { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
       { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
       { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
       { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
     ],
-    filter: '',
-  };
+    []
+  );
 
-  componentDidMount() {
-    const contactsList = JSON.parse(localStorage.getItem('ContactsList'));
-    if (contactsList) {
-      this.setState({ contacts: contactsList });
-    }
-  }
-  componentDidUpdate(prevState) {
-    if (this.state.contacts !== prevState) {
-      localStorage.setItem('ContactsList', JSON.stringify(this.state.contacts));
-    }
-  }
+  const [filter, setFilter] = useState('');
 
-  addContact = ({ name, number }) => {
+  const addContact = ({ name, number }) => {
     const normalizedName = name.toLowerCase();
 
-    const some = this.state.contacts.some(
-      el => el.name.toLowerCase() === normalizedName
-    );
+    const some = contacts.some(el => el.name.toLowerCase() === normalizedName);
     if (some) {
       return Notiflix.Notify.failure(` ${name} is already in contacts`);
     }
@@ -47,69 +36,58 @@ export class App extends Component {
       number,
     };
 
-    this.setState(prevState => ({
-      contacts: [...prevState.contacts, contact],
-    }));
+    setContacts([contact, ...contacts]);
   };
 
-  handleFilterInput = e => {
-    this.setState({ filter: e.target.value });
+  const handleFilterInput = e => {
+    setFilter(e.target.value);
   };
 
-  getFilteredContacts = () => {
-    const { filter, contacts } = this.state;
+  const getFilteredContacts = () => {
     const normalizedFilter = filter.toLowerCase();
-
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedFilter)
-    );
+    return contacts.filter(contact => {
+      return contact.name.toLowerCase().includes(normalizedFilter);
+    });
   };
 
-  deleteContact = id => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
+  const deleteContact = id => {
+    setContacts(contacts.filter(contact => contact.id !== id));
   };
 
-  render() {
-    const contactsToShow = this.getFilteredContacts();
+  const contactsToShow = getFilteredContacts();
 
-    return (
-      <Box
-        display="flex"
-        flexDirection="column"
-        gridGap={10}
-        width={[1 / 2]}
-        ml={'auto'}
-        mr={'auto'}
-        p={20}
-      >
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      gridGap={10}
+      width={[1 / 2]}
+      ml={'auto'}
+      mr={'auto'}
+      p={20}
+    >
+      <div>
+        <h2>Phonebook</h2>
+        <ContactForm onSubmit={addContact} />{' '}
+      </div>
+      {contacts.length ? (
         <div>
-          <h2>Phonebook</h2>
-          <ContactForm onSubmit={this.addContact} />{' '}
+          <h2>Contacts</h2>
+          <Boxitem
+            display="inline-flex"
+            flexDirection="column"
+            border="1px solid black"
+          >
+            <Filter value={filter} onChange={handleFilterInput} />{' '}
+          </Boxitem>
+          <ContactList
+            contacts={contactsToShow}
+            onDeleteContact={deleteContact}
+          />
         </div>
-        {this.state.contacts.length ? (
-          <div>
-            <h2>Contacts</h2>
-            <Boxitem
-              display="inline-flex"
-              flexDirection="column"
-              border="1px solid black"
-            >
-              <Filter
-                value={this.state.filter}
-                onChange={this.handleFilterInput}
-              />{' '}
-            </Boxitem>
-            <ContactList
-              contacts={contactsToShow}
-              onDeleteContact={this.deleteContact}
-            />
-          </div>
-        ) : (
-          <h2>No contacts yet</h2>
-        )}
-      </Box>
-    );
-  }
+      ) : (
+        <h2>No contacts yet</h2>
+      )}
+    </Box>
+  );
 }
