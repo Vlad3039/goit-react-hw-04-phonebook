@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useHookLS } from './hooks/hookLS';
 
 import Notiflix from 'notiflix';
 import { nanoid } from 'nanoid';
